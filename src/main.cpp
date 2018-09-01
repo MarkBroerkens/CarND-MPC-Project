@@ -17,6 +17,10 @@ constexpr double pi() { return M_PI; }
 double deg2rad(double x) { return x * pi() / 180; }
 double rad2deg(double x) { return x * 180 / pi(); }
 
+// constants
+const double max_steer_angle_degree = 25;
+const double mph_to_ms_factor = 0.44704;
+
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
 // else the empty string "" will be returned.
@@ -85,21 +89,89 @@ int main() {
         string event = j[0].get<string>();
         if (event == "telemetry") {
           // j[1] is the data JSON object
+          // global x positions of the waypoints
           vector<double> ptsx = j[1]["ptsx"];
+          // global y positions of the waypoints. This corresponds to the z coordinate in Unity since y is the up-down direction.
           vector<double> ptsy = j[1]["ptsy"];
+          // global x position of the vehicle
           double px = j[1]["x"];
+          // global y position of the vehicle
           double py = j[1]["y"];
+          // The orientation of the vehicle in radians converted from the Unity format to the standard format expected in most mathemetical functions (more details below)
           double psi = j[1]["psi"];
-          double v = j[1]["speed"];
+          // current velocity in mph
+          double v_mph = j[1]["speed"];
+          double v_ms = mph_to_ms_factor * v_mph;
 
-          /*
-          * TODO: Calculate steering angle and throttle using MPC.
-          *
-          * Both are in between [-1, 1].
-          *
+
+          // The waypoints ptsx and ptsy from the simulator are given in a global coordinate system.
+          // we need them in the coordinate system of the car.
+          vector<double> car_waypoints_x;
+          vector<double> car_waypoints_y;
+          for (int i = 0; i < ptsx.size(); i++) {
+            double dx = ptsx[i] - px;
+            double dy = ptsy[i] - py;
+            car_waypoints_x.push_back(dx * cos(psi) + dy * sin(psi)); // positive: ahead
+            car_waypoints_y.push_back(dy * cos(psi) - dx * sin(psi)); // positive: to the left
+          }
+
+          // TODO rework initialization of eigen vectors
+          // where does the 6 come from?
+          double* ptrx = &car_waypoints_x[0];
+          double* ptry = &car_waypoints_y[0];
+          Eigen::Map<Eigen::VectorXd> car_waypoints_x_eigen(ptrx, 6);
+          Eigen::Map<Eigen::VectorXd> car_waypoints_y_eigen(ptry, 6);
+
+
+          // fit 3rd order polynomials to waypoints
+          // from lesson: Vehicle Models - 8. Fitting Polynomials ff
+          auto coeffs = polyfit(car_waypoints_x_eigen, car_waypoints_y_eigen, 3);
+
+          // cross track error, calculated by inserting x=0 into our polynomial
+          // positive value: too far to the right, negative too far to the left
+          double cte = polyeval(coeffs, 0);
+
+          // from lesson: Vehicle Models - 10. Errors
+          // positive value: to far to the left, negative too far to the right
+          double epsi = -atan(coeffs[1]);
+
+          Eigen::VectorXd state(6);
+
+          for (int i =0; i<20; ++i) {
+            std::cout << i << ": " << polyeval(coeffs, i) << std::endl;
+          }
+
+          // TODO: with latency we need to calculate a future state
+          state << 0, 0, 0, v_ms, cte, epsi;
+
+         /* std::vector<double> x_vals = {state[0]};
+          std::vector<double> y_vals = {state[1]};
+          std::vector<double> psi_vals = {state[2]};
+          std::vector<double> v_vals = {state[3]};
+          std::vector<double> cte_vals = {state[4]};
+          std::vector<double> epsi_vals = {state[5]};
+          std::vector<double> delta_vals = {};
+          std::vector<double> a_vals = {};
           */
-          double steer_value;
-          double throttle_value;
+
+         // std::cout<< "state--" << " x:" << px <<" y:" <<  py << " psi:" << psi <<  "cte: " << cte << " epsi: " << epsi << std::endl;
+          auto vars = mpc.Solve(state, coeffs);
+
+            /*x_vals.push_back(vars[0]);
+            y_vals.push_back(vars[1]);
+            psi_vals.push_back(vars[2]);
+            v_vals.push_back(vars[3]);
+            cte_vals.push_back(vars[4]);
+            epsi_vals.push_back(vars[5]);
+
+            delta_vals.push_back(vars[6]);
+            a_vals.push_back(vars[7]);
+             */
+          double steer_value = -vars[0] / deg2rad( max_steer_angle_degree );
+          double throttle_value = vars[1];
+
+          std::cout << "steerangle: " << steer_value << std::endl;
+          std::cout << "throttle: " << throttle_value << std::endl;
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
@@ -111,19 +183,31 @@ int main() {
           vector<double> mpc_x_vals;
           vector<double> mpc_y_vals;
 
+          // TODO replace with MPC values
+          for (int i = 2; i < vars.size(); i ++) {
+            if (i%2 == 0) {
+              mpc_x_vals.push_back(vars[i]);
+            }
+            else {
+              mpc_y_vals.push_back(vars[i]);
+            }
+          }
+
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
 
           msgJson["mpc_x"] = mpc_x_vals;
           msgJson["mpc_y"] = mpc_y_vals;
 
-          //Display the waypoints/reference line
+          // ** Display the waypoints/reference line **
+          // points are in reference to the vehicle's coordinate system
+          // the points in the simulator are connected by a Yellow line
           vector<double> next_x_vals;
           vector<double> next_y_vals;
-
-          //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
-          // the points in the simulator are connected by a Yellow line
-
+          for (int i = 1; i < car_waypoints_x.size(); i++) {
+            next_x_vals.push_back(car_waypoints_x.at(i));
+            next_y_vals.push_back(car_waypoints_y.at(i));
+          }
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
 
@@ -139,7 +223,7 @@ int main() {
           //
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
-          this_thread::sleep_for(chrono::milliseconds(100));
+          //this_thread::sleep_for(chrono::milliseconds(100));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
