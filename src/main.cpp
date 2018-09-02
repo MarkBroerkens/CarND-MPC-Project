@@ -20,6 +20,10 @@ double rad2deg(double x) { return x * 180 / pi(); }
 // constants
 const double max_steer_angle_degree = 25;
 const double mph_to_ms_factor = 0.44704;
+const double Lf = 2.67;
+const long long latency_in_ms = 100;
+const double latency_in_s = latency_in_ms / 1000;
+
 
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
@@ -103,6 +107,9 @@ int main() {
           double v_mph = j[1]["speed"];
           double v_ms = mph_to_ms_factor * v_mph;
 
+          double sim_steer_angle = j[1]["steering_angle"]; // [-25, 25]
+          double sim_throttle = j[1]["throttle"]; // [-1, 1]
+
 
           // The waypoints ptsx and ptsy from the simulator are given in a global coordinate system.
           // we need them in the coordinate system of the car.
@@ -137,12 +144,15 @@ int main() {
 
           Eigen::VectorXd state(6);
 
-          for (int i =0; i<20; ++i) {
-            std::cout << i << ": " << polyeval(coeffs, i) << std::endl;
-          }
+          const double x_after_latency = v_ms * latency_in_s;
+          const double y_after_latency = 0;
+          const double psi_after_latency = - v_ms * sim_steer_angle * latency_in_s / Lf;
+          const double v_ms_after_latency = v_ms + sim_throttle * latency_in_s;
+          const double cte_after_latency = cte + v_ms * sin(epsi) * latency_in_s;
+          const double epsi_after_latency = epsi + psi_after_latency;
 
-          // TODO: with latency we need to calculate a future state
-          state << 0, 0, 0, v_ms, cte, epsi;
+          //state << 0, 0, 0, v_ms, cte, epsi;
+          state << x_after_latency, y_after_latency, psi_after_latency, v_ms_after_latency, cte_after_latency, epsi_after_latency;
 
          /* std::vector<double> x_vals = {state[0]};
           std::vector<double> y_vals = {state[1]};
@@ -223,7 +233,7 @@ int main() {
           //
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
-          //this_thread::sleep_for(chrono::milliseconds(100));
+          this_thread::sleep_for(chrono::milliseconds(latency_in_ms));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {

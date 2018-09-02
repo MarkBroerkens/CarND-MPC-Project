@@ -22,16 +22,18 @@ double dt = 0.1; // seconds
 const double Lf = 2.67;
 
 // Both the reference cross track and orientation errors are 0.
-// The reference velocity is set to 40 mph.
-double ref_v = 40;
+// The reference velocity is set to 50 m/s.
+double ref_v = 20;
+double ref_cte = 0;
+double ref_epsi = 0;
 
 const int cte_cost_weight = 1;
-const int epsi_cost_weight = 1;
+const int epsi_cost_weight = 5;
 const int v_cost_weight = 1;
 const int delta_cost_weight = 5; // Inspired by Udacity video
-const int a_cost_weight = 5;
-const int delta_change_cost_weight = 1000; // Was 200000
-const int jerk_cost_weight = 10;
+const int a_cost_weight = 10;
+const int delta_change_cost_weight = 50000; // Was 200000
+const int jerk_cost_weight = 1;
 
 // The solver takes all the state variables and actuator
 // variables in a singular vector. Thus, we should to establish
@@ -66,8 +68,8 @@ class FG_eval {
 
     // The part of the cost based on the reference state.
     for (int t = 0; t < N; t++) {
-      fg[0] += cte_cost_weight * CppAD::pow(vars[cte_start + t], 2);
-      fg[0] += epsi_cost_weight * CppAD::pow(vars[epsi_start + t], 2);
+      fg[0] += cte_cost_weight * CppAD::pow(vars[cte_start + t] - ref_cte, 2);
+      fg[0] += epsi_cost_weight * CppAD::pow(vars[epsi_start + t] - ref_epsi, 2);
       fg[0] += v_cost_weight * CppAD::pow(vars[v_start + t] - ref_v, 2);
     }
 
