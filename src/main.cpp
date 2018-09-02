@@ -118,8 +118,8 @@ int main() {
           for (int i = 0; i < ptsx.size(); i++) {
             double dx = ptsx[i] - px;
             double dy = ptsy[i] - py;
-            car_waypoints_x.push_back(dx * cos(psi) + dy * sin(psi)); // positive: ahead
-            car_waypoints_y.push_back(dy * cos(psi) - dx * sin(psi)); // positive: to the left
+            car_waypoints_x.push_back(dx * cos(psi) + dy * sin(psi));
+            car_waypoints_y.push_back(dy * cos(psi) - dx * sin(psi));
           }
 
           // TODO rework initialization of eigen vectors

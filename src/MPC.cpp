@@ -23,16 +23,16 @@ const double Lf = 2.67;
 
 // Both the reference cross track and orientation errors are 0.
 // The reference velocity is set to 50 m/s.
-double ref_v = 20;
+double ref_v = 32;
 double ref_cte = 0;
 double ref_epsi = 0;
 
-const int cte_cost_weight = 1;
-const int epsi_cost_weight = 5;
+const int cte_cost_weight = 2;
+const int epsi_cost_weight = 50;
 const int v_cost_weight = 1;
-const int delta_cost_weight = 5; // Inspired by Udacity video
-const int a_cost_weight = 10;
-const int delta_change_cost_weight = 50000; // Was 200000
+const int delta_cost_weight = 5;
+const int a_cost_weight = 1;
+const int delta_change_cost_weight = 100000;
 const int jerk_cost_weight = 1;
 
 // The solver takes all the state variables and actuator
@@ -127,7 +127,7 @@ class FG_eval {
       //AD<double> f0 = coeffs[0] + coeffs[1] * x0;
       //AD<double> psides0 = CppAD::atan(coeffs[1]);
 
-      AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * x0*x0 + coeffs[3] * x0*x0*x0; // Had POW here, probalby wrong pow?
+      AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * x0*x0 + coeffs[3] * x0*x0*x0;
       AD<double> psides0 = CppAD::atan(coeffs[1] + 2*coeffs[2]*x0 + 3*coeffs[3]*x0*x0);
 
 
@@ -171,13 +171,6 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   double cte = state[4];
   double epsi = state[5];
 
-  std::cout<< "state--" << " x:" << x <<" y:" <<  y << " psi:" << psi << " v:" << v <<  "cte: " << cte << " epsi: " << epsi << std::endl;
-
-
-  // TODO: Set the number of model variables (includes both states and inputs).
-  // For example: If the state is a 4 element vector, the actuators is a 2
-  // element vector and there are 10 timesteps. The number of variables is:
-  //
   // number of independent variables
   // N timesteps == N - 1 actuations
   size_t n_vars = N * 6 + (N - 1) * 2;
@@ -212,14 +205,12 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
 
   // The upper and lower limits of delta are set to -25 and 25
   // degrees (values in radians).
-  // NOTE: Feel free to change this to something else.
   for (int i = delta_start; i < a_start; i++) {
     vars_lowerbound[i] = -steering_angle_constraint;
     vars_upperbound[i] = steering_angle_constraint;
   }
 
   // Acceleration/decceleration upper and lower limits.
-  // NOTE: Feel free to change this to something else.
   for (int i = a_start; i < n_vars; i++) {
     vars_lowerbound[i] = -throttle_constraint;
     vars_upperbound[i] = throttle_constraint;
