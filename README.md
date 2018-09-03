@@ -40,12 +40,12 @@ epsi[t+1] = psi[t] - psides[t] + v[t] * delta[t] / Lf * dt
 ## Timestep Length and Elapsed Duration (N & dt)
 The prediction horizon is the duration over which predictions are made. 
 * ``dt=100ms`` the same duration as the latency of the system
-* ``N=8`` this amount of steps allows for observing about ``44,7m  = 100mph*0.44704mps/mph*1s = 100mph*1s ``
+* ``N=11`` this amount of steps allows prediction of 1.1s into the future. If the car would a max speed of 100mph we would predict the trajectory fo up to ``49,17m  = 100mph*0.44704mps/mph*1.1s = 100mph*1.1s``
 I reduced and increased the prediction horizon and figured out, that too many steps decreased the accuracy. 
 
 
 ## Polynomial Fitting and MPC Preprocessing
-The simulator return the position of the car and the waypoints in a global cordinate system. Before fitting the waypoints, they have to be translated into the coordinate system of the car:
+The simulator returns the position of the car (x,y), its orientation (psi) and the waypoints (ptsx[i], ptsy[i]) in a global cordinate system. Before fitting the waypoints, they are translated into the coordinate system of the car:
 
 ```c
 for (int i = 0; i < ptsx.size(); i++) {
