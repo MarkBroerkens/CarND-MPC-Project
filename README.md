@@ -1,17 +1,17 @@
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
 # The Project
-This project consists of a c++ implementation of a Model Predictive Control (MPC) to control the steering angle and the throttle acceleration of a car using the Udacity self driving simulator.
+This project consists of a c++ implementation of a Model Predictive Control (MPC) to control the steering angle and the throttle acceleration of a car.
 
-[//]: # (Image References)
-
-[image1]: ./images/simulator.png "Simaluator"
+[![MPC](https://img.youtube.com/vi/G85SkykVckA/0.jpg)](https://www.youtube.com/watch?v=G85SkykVckA)
 
 # Compilation
 1. Clone this repo.
 2. Make a build directory: `mkdir build && cd build`
 3. Compile: `cmake .. && make`
 4. Run it: `./mpc`.
+
+Note: I had to disable the line ``options += "Numeric max_cpu_time          0.5\n";`` in order to get predictions from the solver.
 
 # Implementation
 ## The Model
@@ -89,55 +89,47 @@ for (int i = a_start; i < n_vars; i++) {
 
 ### Costfunction
 ```c
-double ref_v = 40;
+double ref_v = 25;
 double ref_cte = 0;
 double ref_epsi = 0;
 
-const int cte_cost_weight = 1;
-const int epsi_cost_weight = 30;
-const int v_cost_weight = 1;
+const int cte_cost_weight = 50;
+const int epsi_cost_weight = 5000;
+const int v_cost_weight = 1000;
 const int delta_cost_weight = 5;
-const int a_cost_weight = 10;
-const int delta_change_cost_weight = 50000;
-const int jerk_cost_weight = 1;`
+const int a_cost_weight = 5;
+const int high_speed_high_delta_penalty_weight = 20;
+const int delta_change_cost_weight = 80000;
+const int jerk_cost_weight = 10;
 
-// The part of the cost based on the reference state.
-for (int t = 0; t < N; t++) {
-  fg[0] += cte_cost_weight * CppAD::pow(vars[cte_start + t] - ref_cte, 2);
-  fg[0] += epsi_cost_weight * CppAD::pow(vars[epsi_start + t] - ref_epsi, 2);
-  fg[0] += v_cost_weight * CppAD::pow(vars[v_start + t] - ref_v, 2);
-}
+    // The part of the cost based on the reference state.
+    for (int t = 0; t < N; t++) {
+      fg[0] += cte_cost_weight * CppAD::pow(vars[cte_start + t] - ref_cte, 2);
+      fg[0] += epsi_cost_weight * CppAD::pow(vars[epsi_start + t] - ref_epsi, 2);
+      fg[0] += v_cost_weight * CppAD::pow(vars[v_start + t] - ref_v, 2);
+    }
 
-// Minimize the use of actuators.
-for (int t = 0; t < N - 1; t++) {
-  fg[0] += delta_cost_weight * CppAD::pow(vars[delta_start + t], 2);
-  fg[0] += a_cost_weight * CppAD::pow(vars[a_start + t], 2);
-}
+    // Minimize the use of actuators.
+    for (int t = 0; t < N - 1; t++) {
+      fg[0] += delta_cost_weight * CppAD::pow(vars[delta_start + t], 2);
+      fg[0] += a_cost_weight * CppAD::pow(vars[a_start + t], 2);
+      // penalty for high velocity with high delta
+      fg[0] += high_speed_high_delta_penalty_weight * CppAD::pow(vars[a_start + t] * vars[v_start+t], 2);
+    }
 
-// Minimize the value gap between sequential actuations.
-for (int t = 0; t < N - 2; t++) {
-  fg[0] += delta_change_cost_weight * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
-  fg[0] += jerk_cost_weight * CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
-}
+    // Minimize the value gap between sequential actuations.
+    for (int t = 0; t < N - 2; t++) {
+      fg[0] += delta_change_cost_weight * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
+      fg[0] += jerk_cost_weight * CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
+    }
 ```
 
 ### Dealing with latency
+The latency of 100ms is realized by constraining the first step (100ms) to the previous angle and throttle. The 2nd angle and throttle is returned to the solver.
 
-```c
-const double x_after_latency = v_ms * latency_in_s;
-const double y_after_latency = 0;
-const double psi_after_latency = - v_ms * sim_steer_angle * latency_in_s / Lf;
-const double v_ms_after_latency = v_ms + sim_throttle * latency_in_s;
-const double cte_after_latency = cte + v_ms * sin(epsi) * latency_in_s;
-const double epsi_after_latency = epsi + psi_after_latency;
-
-state << x_after_latency, y_after_latency, psi_after_latency, v_ms_after_latency, cte_after_latency, epsi_after_latency;
-```
 # Simulation
 ## The vehicle must successfully drive a lap around the track.
-No tire may leave the drivable portion of the track surface. The car may not pop up onto ledges or roll over any surfaces that would otherwise be considered unsafe (if humans were in the vehicle).
-
-The car can't go over the curb, but, driving on the lines before the curb is ok.
+See video.
 
 
 # Code Style
