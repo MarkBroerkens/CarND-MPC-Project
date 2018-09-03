@@ -17,22 +17,24 @@ This project consists of a c++ implementation of a Model Predictive Control (MPC
 ## The Model
 The following euqations define rules for updating the prediction model at each time step.
 
-![equation](http://latex.codecogs.com/gif.latex?x_%28t&plus;1%29%20%3D%20x_t%20&plus;%20v_t%20*%20cos%28%5Cpsi_t%29*dt)
-
-![equation](http://latex.codecogs.com/gif.latex?y_%28t&plus;1%29%20%3D%20y_t%20&plus;%20v_t%20*%20sin%28%5Cpsi_t%29*dt)
-
-![equation](http://latex.codecogs.com/gif.latex?%5Cpsi%20_%28t&plus;1%29%20%3D%20%5Cpsi%20_t%20&plus;%20%5Cfrac%7Bv_t%7D%7BL_f%7D*%20%5Cdelta_t%20*%20dt)
-
-![equation](http://latex.codecogs.com/gif.latex?v_%28t&plus;1%29%20%3D%20v%20_t%20&plus;%20a_t%20*%20dt)
-
-![equation](http://latex.codecogs.com/gif.latex?cte_%28t&plus;1%29%20%3D%20f%28x_t%29%20-%20y_t%20&plus;%20v%20_t%20*%20sin%28e%5Cpsi%20_t%29%20*%20dt)
-
-![equation](http://latex.codecogs.com/gif.latex?e%5Cpsi%20_%28t&plus;1%29%20%3D%20%5Cpsi%20_t%20-%20%5Cpsi%20dest%20&plus;%20%5Cfrac%7Bv_f%7D%7BL_f%7D%20*%20%5Cdelta_t%20*%20dt)
+```c
+x_[t+1] = x[t] + v[t] * cos(psi[t]) * dt
+y_[t+1] = y[t] + v[t] * sin(psi[t]) * dt
+psi_[t+1] = psi[t] + v[t] / Lf * delta[t] * dt
+v_[t+1] = v[t] + a[t] * dt
+cte[t+1] = f(x[t]) - y[t] + v[t] * sin(epsi[t]) * dt
+epsi[t+1] = psi[t] - psides[t] + v[t] * delta[t] / Lf * dt
+```
+* ``x``, ``y`` position of the car in the coordinate system of the car
+* ``psi``orientation of the car
+* ``v`` speed
+* ``cte``cross track error
+* ``èpsi`` error with resperct to the orientation
 
 
 * ``Lf`` measures the distance between the front of the vehicle and its center of gravity. 
 * ``f(x)`` is the evaluation of the polynomial ``f`` at point x 
-* and ``psidest`` is the tangencial angle of the polynomial ``f`` evaluated at x.
+* and ``psides`` is the tangencial angle of the polynomial ``f`` evaluated at x.
 
 
 ## Timestep Length and Elapsed Duration (N & dt)
