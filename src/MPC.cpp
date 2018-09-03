@@ -211,8 +211,6 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   std::cout << "prev_deta " << prev_delta;
   vars_lowerbound[delta_start] = prev_delta;
   vars_upperbound[delta_start] = prev_delta;
-  //vars_lowerbound[delta_start+1] = prev_delta;
-  //vars_upperbound[delta_start+1] = prev_delta;
   for (int i = delta_start +1; i < a_start; i++) {
     vars_lowerbound[i] = -steering_angle_constraint;
     vars_upperbound[i] = steering_angle_constraint;
@@ -222,8 +220,6 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   std::cout << "prev_throtte " << prev_throttle;
   vars_lowerbound[a_start] = prev_throttle;
   vars_upperbound[a_start] = prev_throttle;
-  //vars_lowerbound[a_start+1] = prev_throttle;
-  //vars_upperbound[a_start+1] = prev_throttle;
   for (int i = a_start +1; i < n_vars; i++) {
     vars_lowerbound[i] = -throttle_constraint;
     vars_upperbound[i] = throttle_constraint;
