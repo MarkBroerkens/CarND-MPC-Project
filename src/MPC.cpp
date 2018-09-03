@@ -6,7 +6,7 @@
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 8 ;
+size_t N = 11 ;
 double dt = 0.1; // seconds
 
 // This value assumes the model presented in the classroom is used.
@@ -22,18 +22,19 @@ double dt = 0.1; // seconds
 const double Lf = 2.67;
 
 // Both the reference cross track and orientation errors are 0.
-// The reference velocity is set to 50 m/s.
-double ref_v = 32;
+// The reference velocity is set to 25 m/s.
+double ref_v = 25;
 double ref_cte = 0;
 double ref_epsi = 0;
 
-const int cte_cost_weight = 2;
-const int epsi_cost_weight = 50;
-const int v_cost_weight = 1;
+const int cte_cost_weight = 50;
+const int epsi_cost_weight = 5000;
+const int v_cost_weight = 1000;
 const int delta_cost_weight = 5;
-const int a_cost_weight = 1;
-const int delta_change_cost_weight = 100000;
-const int jerk_cost_weight = 1;
+const int a_cost_weight = 5;
+const int high_speed_high_delta_penalty_weight = 20;
+const int delta_change_cost_weight = 80000;
+const int jerk_cost_weight = 10;
 
 // The solver takes all the state variables and actuator
 // variables in a singular vector. Thus, we should to establish
@@ -77,6 +78,8 @@ class FG_eval {
     for (int t = 0; t < N - 1; t++) {
       fg[0] += delta_cost_weight * CppAD::pow(vars[delta_start + t], 2);
       fg[0] += a_cost_weight * CppAD::pow(vars[a_start + t], 2);
+      // penalty for high velocity with high delta
+      fg[0] += high_speed_high_delta_penalty_weight * CppAD::pow(vars[a_start + t] * vars[v_start+t], 2);
     }
 
     // Minimize the value gap between sequential actuations.
@@ -205,13 +208,23 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
 
   // The upper and lower limits of delta are set to -25 and 25
   // degrees (values in radians).
-  for (int i = delta_start; i < a_start; i++) {
+  std::cout << "prev_deta " << prev_delta;
+  vars_lowerbound[delta_start] = prev_delta;
+  vars_upperbound[delta_start] = prev_delta;
+  //vars_lowerbound[delta_start+1] = prev_delta;
+  //vars_upperbound[delta_start+1] = prev_delta;
+  for (int i = delta_start +1; i < a_start; i++) {
     vars_lowerbound[i] = -steering_angle_constraint;
     vars_upperbound[i] = steering_angle_constraint;
   }
 
   // Acceleration/decceleration upper and lower limits.
-  for (int i = a_start; i < n_vars; i++) {
+  std::cout << "prev_throtte " << prev_throttle;
+  vars_lowerbound[a_start] = prev_throttle;
+  vars_upperbound[a_start] = prev_throttle;
+  //vars_lowerbound[a_start+1] = prev_throttle;
+  //vars_upperbound[a_start+1] = prev_throttle;
+  for (int i = a_start +1; i < n_vars; i++) {
     vars_lowerbound[i] = -throttle_constraint;
     vars_upperbound[i] = throttle_constraint;
   }
@@ -259,7 +272,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   options += "Sparse  true        reverse\n";
   // NOTE: Currently the solver has a maximum time limit of 0.5 seconds.
   // Change this as you see fit.
-  //options += "Numeric max_cpu_time          0.5\n";
+  // options += "Numeric max_cpu_time          1\n";
 
   // place to return solution
   CppAD::ipopt::solve_result<Dvector> solution;
@@ -276,7 +289,10 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   auto cost = solution.obj_value;
   std::cout << "Cost " << cost << std::endl;
 
-  std::vector<double> result = {solution.x[delta_start], solution.x[a_start] };
+  prev_delta = solution.x[delta_start+1];
+  prev_throttle = solution.x[a_start+1];
+
+  std::vector<double> result = {solution.x[delta_start+1], solution.x[a_start+1] };
   for (unsigned int i = 0; i < N; ++i) {
     result.push_back(solution.x[x_start + i]);
     result.push_back(solution.x[y_start + i]);

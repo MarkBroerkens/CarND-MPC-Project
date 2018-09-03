@@ -107,7 +107,7 @@ int main() {
           double v_mph = j[1]["speed"];
           double v_ms = mph_to_ms_factor * v_mph;
 
-          double sim_steer_angle = j[1]["steering_angle"]; // [-25, 25]
+          double sim_steer_angle = j[1]["steering_angle"]; // [deg2rad(-25), deg2rad(25)]
           double sim_throttle = j[1]["throttle"]; // [-1, 1]
 
 
@@ -151,8 +151,8 @@ int main() {
           const double cte_after_latency = cte + v_ms * sin(epsi) * latency_in_s;
           const double epsi_after_latency = epsi + psi_after_latency;
 
-          //state << 0, 0, 0, v_ms, cte, epsi;
-          state << x_after_latency, y_after_latency, psi_after_latency, v_ms_after_latency, cte_after_latency, epsi_after_latency;
+          state << 0, 0, 0, v_ms, cte, epsi;
+          //state << x_after_latency, y_after_latency, psi_after_latency, v_ms_after_latency, cte_after_latency, epsi_after_latency;
 
          /* std::vector<double> x_vals = {state[0]};
           std::vector<double> y_vals = {state[1]};
