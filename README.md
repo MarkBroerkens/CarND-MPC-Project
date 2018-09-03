@@ -62,11 +62,6 @@ After preprocessing, the polynomial is fitted using the helper function ``polyfi
 ## Model Predictive Control with Latency
 The goal of the Model Predictive Control algorithm is to find appropriate values for the steering angle and throttle that results in a predicted trajectory which is as close as possible to the polynom that was fitted to the waypoints
 
-
-![equation](http://latex.codecogs.com/gif.latex?%5Cdelta%20%5Cepsilon%20%5B-25%5E%7B%5Ccirc%7D%2C%2025%5E%7B%5Ccirc%7D%5D)
-
-![equation](http://latex.codecogs.com/gif.latex?a%20%5Cepsilon%20%5B-1%2C%201%5D)
-
 ### Constraints
 The actuators constraints limits the upper and lower bounds of the steering angle and throttle acceleration/brake.
 ```c
@@ -75,15 +70,20 @@ The actuators constraints limits the upper and lower bounds of the steering angl
 const double steering_angle_constraint = 0.436332; // Constraint for steering angle
 const double throttle_constraint = 1.0; // Constraint for acceleration
 
-for (int i = delta_start; i < a_start; i++) {
-  vars_lowerbound[i] = -steering_angle_constraint;
-  vars_upperbound[i] = steering_angle_constraint;
+// delta of fist step is constrainted to the previous delta in order to consider the latency of 100ms
+vars_lowerbound[delta_start] = prev_delta;
+vars_upperbound[delta_start] = prev_delta;
+for (int i = delta_start +1; i < a_start; i++) {
+    vars_lowerbound[i] = -steering_angle_constraint;
+    vars_upperbound[i] = steering_angle_constraint;
 }
 
-// Acceleration/decceleration upper and lower limits.
-for (int i = a_start; i < n_vars; i++) {
-  vars_lowerbound[i] = -throttle_constraint;
-  vars_upperbound[i] = throttle_constraint;
+// acceleration of first step is constrained to the previous acceleration in order to consider the latency of 100ms
+vars_lowerbound[a_start] = prev_throttle;
+vars_upperbound[a_start] = prev_throttle;
+for (int i = a_start +1; i < n_vars; i++) {
+    vars_lowerbound[i] = -throttle_constraint;
+    vars_upperbound[i] = throttle_constraint;
 }
 ```
 
@@ -124,19 +124,11 @@ const int jerk_cost_weight = 10;
     }
 ```
 
+Weights are added to each component of the cost function in order to tailor their impoact. 
+An additional penalty is added in order to avoid high values of delta for high speed.
+
 ### Dealing with latency
-The latency of 100ms is realized by constraining the first step (100ms) to the previous angle and throttle. The 2nd angle and throttle is returned to the solver.
-
-# Simulation
-## The vehicle must successfully drive a lap around the track.
-See video.
-
-
-# Code Style
-I tried to stick to the [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html).
-In order to check the guidelines I installed cpplint using 
-`pip install cpplint`
-
+The latency of 100ms is realized by constraining the first step (100ms) to the previous angle and throttle. The 2nd angle and throttle are returned to the solver.
 
 
 
