@@ -60,7 +60,7 @@ After preprocessing, the polynomial is fitted using the helper function ``polyfi
 
 
 ## Model Predictive Control with Latency
-The goal of the Model Predictive Control algorithm is to find appropriate values for the steering angle and throttle that results in an predicted trajectory which is as close as possible to the polynom that was fitted to the waypoints
+The goal of the Model Predictive Control algorithm is to find appropriate values for the steering angle and throttle that results in a predicted trajectory which is as close as possible to the polynom that was fitted to the waypoints
 
 
 ![equation](http://latex.codecogs.com/gif.latex?%5Cdelta%20%5Cepsilon%20%5B-25%5E%7B%5Ccirc%7D%2C%2025%5E%7B%5Ccirc%7D%5D)
@@ -81,7 +81,6 @@ for (int i = delta_start; i < a_start; i++) {
 }
 
 // Acceleration/decceleration upper and lower limits.
-// NOTE: Feel free to change this to something else.
 for (int i = a_start; i < n_vars; i++) {
   vars_lowerbound[i] = -throttle_constraint;
   vars_upperbound[i] = throttle_constraint;
