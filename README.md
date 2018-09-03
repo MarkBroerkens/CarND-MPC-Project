@@ -55,7 +55,7 @@ for (int i = 0; i < ptsx.size(); i++) {
   car_waypoints_y.push_back(dy * cos(psi) - dx * sin(psi)); // positive values: to the left
 }
 ```
-After preprocessing, the polynomial is fitted using the helper function ``polyfit`` (file main.cpp at line xxxx). 
+After preprocessing, the polynomial is fitted using the helper function ``polyfit`` (file main.cpp at line 55). 
 `
 
 
