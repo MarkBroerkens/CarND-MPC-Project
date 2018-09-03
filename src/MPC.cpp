@@ -60,6 +60,7 @@ class FG_eval {
 
   typedef CPPAD_TESTVECTOR(AD<double>) ADvector;
   void operator()(ADvector& fg, const ADvector& vars) {
+    size_t t;
     // from Lesson 19: Model Predictive Control - ´8. Mind the Line
     // TODO: implement MPC
     // `fg` a vector of the cost constraints, `vars` is a vector of variable values (state & actuators)
@@ -68,14 +69,14 @@ class FG_eval {
     fg[0] = 0;
 
     // The part of the cost based on the reference state.
-    for (int t = 0; t < N; t++) {
+    for (t = 0; t < N; t++) {
       fg[0] += cte_cost_weight * CppAD::pow(vars[cte_start + t] - ref_cte, 2);
       fg[0] += epsi_cost_weight * CppAD::pow(vars[epsi_start + t] - ref_epsi, 2);
       fg[0] += v_cost_weight * CppAD::pow(vars[v_start + t] - ref_v, 2);
     }
 
     // Minimize the use of actuators.
-    for (int t = 0; t < N - 1; t++) {
+    for (t = 0; t < N - 1; t++) {
       fg[0] += delta_cost_weight * CppAD::pow(vars[delta_start + t], 2);
       fg[0] += a_cost_weight * CppAD::pow(vars[a_start + t], 2);
       // penalty for high velocity with high delta
@@ -83,7 +84,7 @@ class FG_eval {
     }
 
     // Minimize the value gap between sequential actuations.
-    for (int t = 0; t < N - 2; t++) {
+    for (t = 0; t < N - 2; t++) {
       fg[0] += delta_change_cost_weight * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
       fg[0] += jerk_cost_weight * CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
     }
@@ -106,7 +107,7 @@ class FG_eval {
     fg[1 + epsi_start] = vars[epsi_start];
 
     // The rest of the constraints
-    for (int t = 1; t < N; t++) {
+    for (t = 1; t < N; t++) {
       // The state at time t+1 .
       AD<double> x1 = vars[x_start + t];
       AD<double> y1 = vars[y_start + t];
@@ -183,7 +184,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // Initial value of the independent variables.
   // SHOULD BE 0 besides initial state.
   Dvector vars(n_vars);
-  for (int i = 0; i < n_vars; i++) {
+  for (i = 0; i < n_vars; i++) {
     vars[i] = 0.0;
   }
 
@@ -201,26 +202,26 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
 
   // Set all non-actuators upper and lowerlimits
   // to the max negative and positive values.
-  for (int i = 0; i < delta_start; i++) {
+  for (i = 0; i < delta_start; i++) {
     vars_lowerbound[i] = std::numeric_limits<double>::lowest();
     vars_upperbound[i] = std::numeric_limits<double>::max();
   }
 
   // The upper and lower limits of delta are set to -25 and 25
   // degrees (values in radians).
-  std::cout << "prev_deta " << prev_delta;
+  // std::cout << "prev_deta " << prev_delta;
   vars_lowerbound[delta_start] = prev_delta;
   vars_upperbound[delta_start] = prev_delta;
-  for (int i = delta_start +1; i < a_start; i++) {
+  for (i = delta_start +1; i < a_start; i++) {
     vars_lowerbound[i] = -steering_angle_constraint;
     vars_upperbound[i] = steering_angle_constraint;
   }
 
   // Acceleration/decceleration upper and lower limits.
-  std::cout << "prev_throtte " << prev_throttle;
+  // std::cout << "prev_throtte " << prev_throttle;
   vars_lowerbound[a_start] = prev_throttle;
   vars_upperbound[a_start] = prev_throttle;
-  for (int i = a_start +1; i < n_vars; i++) {
+  for (i = a_start +1; i < n_vars; i++) {
     vars_lowerbound[i] = -throttle_constraint;
     vars_upperbound[i] = throttle_constraint;
   }
@@ -231,7 +232,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // state indices.
   Dvector constraints_lowerbound(n_constraints);
   Dvector constraints_upperbound(n_constraints);
-  for (int i = 0; i < n_constraints; i++) {
+  for (i = 0; i < n_constraints; i++) {
     constraints_lowerbound[i] = 0;
     constraints_upperbound[i] = 0;
   }
@@ -289,7 +290,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   prev_throttle = solution.x[a_start+1];
 
   std::vector<double> result = {solution.x[delta_start+1], solution.x[a_start+1] };
-  for (unsigned int i = 0; i < N; ++i) {
+  for (i = 0; i < N; ++i) {
     result.push_back(solution.x[x_start + i]);
     result.push_back(solution.x[y_start + i]);
   }

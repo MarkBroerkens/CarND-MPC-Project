@@ -20,9 +20,8 @@ double rad2deg(double x) { return x * 180 / pi(); }
 // constants
 const double max_steer_angle_degree = 25;
 const double mph_to_ms_factor = 0.44704;
-const double Lf = 2.67;
+
 const long long latency_in_ms = 100;
-const double latency_in_s = latency_in_ms / 1000;
 
 
 // Checks if the SocketIO event has JSON data.
@@ -85,7 +84,7 @@ int main() {
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
     string sdata = string(data).substr(0, length);
-    cout << sdata << endl;
+    // cout << sdata << endl;
     if (sdata.size() > 2 && sdata[0] == '4' && sdata[1] == '2') {
       string s = hasData(sdata);
       if (s != "") {
@@ -107,10 +106,6 @@ int main() {
           double v_mph = j[1]["speed"];
           double v_ms = mph_to_ms_factor * v_mph;
 
-          double sim_steer_angle = j[1]["steering_angle"]; // [deg2rad(-25), deg2rad(25)]
-          double sim_throttle = j[1]["throttle"]; // [-1, 1]
-
-
           // The waypoints ptsx and ptsy from the simulator are given in a global coordinate system.
           // we need them in the coordinate system of the car.
           vector<double> car_waypoints_x;
@@ -122,7 +117,6 @@ int main() {
             car_waypoints_y.push_back(dy * cos(psi) - dx * sin(psi));
           }
 
-          // TODO rework initialization of eigen vectors
           // where does the 6 come from?
           double* ptrx = &car_waypoints_x[0];
           double* ptry = &car_waypoints_y[0];
@@ -144,48 +138,14 @@ int main() {
 
           Eigen::VectorXd state(6);
 
-          const double x_after_latency = v_ms * latency_in_s;
-          const double y_after_latency = 0;
-          const double psi_after_latency = - v_ms * sim_steer_angle * latency_in_s / Lf;
-          const double v_ms_after_latency = v_ms + sim_throttle * latency_in_s;
-          const double cte_after_latency = cte + v_ms * sin(epsi) * latency_in_s;
-          const double epsi_after_latency = epsi + psi_after_latency;
-
           state << 0, 0, 0, v_ms, cte, epsi;
-          //state << x_after_latency, y_after_latency, psi_after_latency, v_ms_after_latency, cte_after_latency, epsi_after_latency;
 
-         /* std::vector<double> x_vals = {state[0]};
-          std::vector<double> y_vals = {state[1]};
-          std::vector<double> psi_vals = {state[2]};
-          std::vector<double> v_vals = {state[3]};
-          std::vector<double> cte_vals = {state[4]};
-          std::vector<double> epsi_vals = {state[5]};
-          std::vector<double> delta_vals = {};
-          std::vector<double> a_vals = {};
-          */
-
-         // std::cout<< "state--" << " x:" << px <<" y:" <<  py << " psi:" << psi <<  "cte: " << cte << " epsi: " << epsi << std::endl;
           auto vars = mpc.Solve(state, coeffs);
 
-            /*x_vals.push_back(vars[0]);
-            y_vals.push_back(vars[1]);
-            psi_vals.push_back(vars[2]);
-            v_vals.push_back(vars[3]);
-            cte_vals.push_back(vars[4]);
-            epsi_vals.push_back(vars[5]);
-
-            delta_vals.push_back(vars[6]);
-            a_vals.push_back(vars[7]);
-             */
           double steer_value = -vars[0] / deg2rad( max_steer_angle_degree );
           double throttle_value = vars[1];
 
-          std::cout << "steerangle: " << steer_value << std::endl;
-          std::cout << "throttle: " << throttle_value << std::endl;
-
           json msgJson;
-          // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
-          // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
           msgJson["steering_angle"] = steer_value;
           msgJson["throttle"] = throttle_value;
 
@@ -223,7 +183,7 @@ int main() {
 
 
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          //std::cout << msg << std::endl;
           // Latency
           // The purpose is to mimic real driving conditions where
           // the car does actuate the commands instantly.
