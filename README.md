@@ -141,7 +141,6 @@ Here are some resources you might want to refer to for more insight on the subje
 * [Tutorial overview of model predictive control 1](https://minds.wisconsin.edu/handle/1793/10886)
 * [Linear Model Predictive Control Stability and Robustness](http://www.control.isy.liu.se/research/reports/LicentiateThesis/Lic866.pdf)
 * [Course on Model Predictive Control Part II – Linear MPC design 1](http://www.centropiaggio.unipi.it/sites/default/files/course/material/2_MPCcourse_linearMPC_design.pdf)
-* [Postface to “Model Predictive Control: Theory and Design”](http://jbrwww.che.wisc.edu/home/jbraw/mpc/electronic-book.pdf)
 * [A Tutorial on Model Predictive Control for Spacecraft Rendezvous 2](https://www.repository.cam.ac.uk/bitstream/handle/1810/247957/Hartley%202015%20European%20Control%20Conference%202015.pdf?sequence=1&isAllowed=y)
 * [Explicit Model Predictive Control](https://www.kirp.chtf.stuba.sk/pc11/data/workshops/mpc/MPC_PC11_Lecture2.pdf)
 * [Model predictive control, Prof. Alberto Bemporad](http://cse.lab.imtlucca.it/~bemporad/teaching/ac/pdf/AC2-10-MPC.pdf)
